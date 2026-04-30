@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 
@@ -12,11 +13,12 @@ public static class OpenIddictSeeder
         // https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection-guidelines#scoped-service-as-singleton
         await using var scope = services.CreateAsyncScope();
 
-        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var dbContext          = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var applicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
-        var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
+        var scopeManager       = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
+        var userManager        = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // Apply pending EF Core migrations before seeding — the OpenIddict tables must exist first.
+        // Apply pending EF Core migrations before seeding — all tables must exist first.
         // Safe to call on every startup; it's a no-op if the schema is already up to date.
         await dbContext.Database.MigrateAsync(cancellationToken);
 
@@ -24,5 +26,6 @@ public static class OpenIddictSeeder
         // so it must already exist when CreateAsync runs.
         await ScopeSeeder.SeedAsync(scopeManager, cancellationToken);
         await ClientSeeder.SeedAsync(applicationManager, cancellationToken);
+        await UserSeeder.SeedAsync(userManager, cancellationToken);
     }
 }

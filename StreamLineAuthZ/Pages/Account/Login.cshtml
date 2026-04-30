@@ -1,0 +1,133 @@
+@page
+@model StreamLineAuthZ.Pages.Account.LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Sign in";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] – StreamLine</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #111827;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        h1 {
+            margin: 0 0 .25rem;
+            font-size: 1.375rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            margin: 0 0 1.75rem;
+            font-size: .875rem;
+            color: #6b7280;
+        }
+
+        label {
+            display: block;
+            font-size: .875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: .375rem;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            display: block;
+            width: 100%;
+            padding: .5rem .75rem;
+            font-size: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 1.25rem;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+        }
+
+        button[type="submit"] {
+            display: block;
+            width: 100%;
+            padding: .625rem;
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+            margin-top: .5rem;
+        }
+
+        button[type="submit"]:hover { background: #4f46e5; }
+
+        .validation-summary-errors {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: .75rem 1rem;
+            color: #b91c1c;
+            font-size: .875rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .validation-summary-errors ul { margin: 0; padding-left: 1.25rem; }
+
+        .field-validation-error {
+            display: block;
+            color: #dc2626;
+            font-size: .8rem;
+            margin-top: -.875rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Welcome back</h1>
+        <p class="subtitle">Sign in to your StreamLine account</p>
+
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <label asp-for="Input.Email">Email</label>
+            <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="you@example.com" />
+            <span asp-validation-for="Input.Email" class="field-validation-error"></span>
+
+            <label asp-for="Input.Password">Password</label>
+            <input asp-for="Input.Password" type="password" autocomplete="current-password" placeholder="••••••••" />
+            <span asp-validation-for="Input.Password" class="field-validation-error"></span>
+
+            <button type="submit">Sign in</button>
+        </form>
+    </div>
+</body>
+</html>

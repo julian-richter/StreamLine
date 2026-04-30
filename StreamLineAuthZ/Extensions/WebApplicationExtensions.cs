@@ -103,6 +103,7 @@ public static class WebApplicationExtensions
         // At this point in the pipeline the request has been authenticated and authorized,
         // so endpoint handlers can safely read HttpContext.User.
         app.MapEndpoints();
+        app.MapRazorPages();
 
         await OpenIddictSeeder.SeedAsync(app.Services);
 

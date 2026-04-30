@@ -1,4 +1,4 @@
-namespace StreamLineAuthZ.Endpoints.WeatherForecastDto;
+namespace StreamLineAuthZ.Endpoints.WeatherForecasts;
 
 public record WeatherForecastDto(
     DateOnly Date,

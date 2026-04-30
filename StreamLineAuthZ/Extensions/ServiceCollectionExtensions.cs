@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using StreamLineAuthZ.Data;
 using StreamLineAuthZ.Endpoints;
 
@@ -17,7 +19,31 @@ public static class ServiceCollectionExtensions
         // Registers the OpenAPI document generator. This is the built-in
         // Microsoft.AspNetCore.OpenApi package. Generates the spec at /openapi/v1.json.
         // Docs: https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/aspnetcore-openapi
-        services.AddOpenApi();
+        services.AddOpenApi(options =>
+        {
+            // Add the Authorization header to the token endpoint's OpenAPI operation.
+            // Done here (not via the deprecated WithOpenApi on the endpoint) because .NET 10
+            // replaced per-endpoint WithOpenApi(Func<>) with document-level operation transformers.
+            // https://aka.ms/aspnet/deprecate/002
+            options.AddOperationTransformer((operation, context, _) =>
+            {
+                if (context.Description.RelativePath == "connect/token" &&
+                    string.Equals(context.Description.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
+                {
+                    (operation.Parameters ??= []).Add(new OpenApiParameter
+                    {
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Required = false,
+                        Description = "HTTP Basic client authentication: `Basic base64(client_id:client_secret)`. " +
+                                      "Alternative to supplying `client_id` and `client_secret` in the request body.",
+                        Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+                    });
+                }
+
+                return Task.CompletedTask;
+            });
+        });
 
         // Scans the assembly for all types implementing IEndpoint and registers them.
         // This is our custom convention: see Endpoints/IEndpoint.cs and the endpoint
@@ -83,10 +109,40 @@ public static class ServiceCollectionExtensions
             options.UseOpenIddict();
         });
 
+        // ASP.NET Core Identity — user store, password hashing, sign-in manager, lockout, etc.
+        //
+        // AddDefaultTokenProviders() registers the token providers Identity uses for email
+        // confirmation and password-reset flows (not to be confused with OAuth tokens — those
+        // are OpenIddict's domain).
+        //
+        // We do NOT call AddDefaultUI() here: that would scaffold Razor Pages Identity UI
+        // into the project, but we're building our own login pages to keep full control.
+        //
+        // Identity docs: https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity
+        services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                // Dev-friendly password policy — tighten before production.
+                options.Password.RequireDigit           = false;
+                options.Password.RequireLowercase       = false;
+                options.Password.RequireUppercase       = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredLength         = 8;
+
+                // Require unique emails so we can use email as the login identifier.
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
         // Register ASP.NET Core authentication services.
         // IMPORTANT: do NOT set the OpenIddict server handler as the default scheme.
         // OpenIddict handles protocol endpoints like /connect/token, but it cannot be used
         // as the app-wide default authentication handler. That path leads directly to startup explosions.
+        //
+        // Identity's AddIdentity() call above already configures cookie authentication as the
+        // default scheme, which is exactly what we need: the login page sets a cookie, the
+        // /connect/authorize endpoint reads it to authenticate the user, then OpenIddict issues
+        // the auth code. The two systems work together, not against each other.
         //
         // ASP.NET Core authentication overview:
         // https://learn.microsoft.com/en-us/aspnet/core/security/authentication/
@@ -99,6 +155,11 @@ public static class ServiceCollectionExtensions
         // ASP.NET Core authorization docs:
         // https://learn.microsoft.com/en-us/aspnet/core/security/authorization/introduction
         services.AddAuthorization();
+
+        // Razor Pages powers the login page at /Account/Login.
+        // We use a Razor Page instead of an inline HTML response to get tag helpers,
+        // model binding, anti-forgery tokens, and validation summaries without boilerplate.
+        services.AddRazorPages();
 
         services.AddOpenIddict()
             // Core wires up OpenIddict's managers and stores.
@@ -116,13 +177,16 @@ public static class ServiceCollectionExtensions
             // Server wires up the actual OAuth/OpenID Connect endpoints and token issuing behavior.
             .AddServer(options =>
             {
-                // Tells OpenIddict which URL to intercept as the token endpoint.
-                // Must match the route registered in our token endpoint mapping.
-                // This is what gets published in the discovery document so clients can find it.
+                // Tells OpenIddict which URLs to intercept for each protocol endpoint.
+                // These are published in the discovery document (/.well-known/openid-configuration)
+                // so clients can find them without hardcoding. Must match the routes we register
+                // in our endpoint classes.
                 //
-                // OAuth 2.0 token endpoint — RFC 6749 Section 3.2:
-                // https://datatracker.ietf.org/doc/html/rfc6749#section-3.2
+                // OAuth 2.0 endpoints — RFC 6749 Section 3:
+                // https://datatracker.ietf.org/doc/html/rfc6749#section-3
                 options.SetTokenEndpointUris("/connect/token");
+                options.SetAuthorizationEndpointUris("/connect/authorize");
+                options.SetEndSessionEndpointUris("/connect/logout");
 
                 // Enables the Client Credentials grant type.
                 // OpenIddict is grant-type opt-in by default. If you don't explicitly allow a flow,
@@ -131,6 +195,25 @@ public static class ServiceCollectionExtensions
                 // Client Credentials grant — RFC 6749 Section 4.4:
                 // https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
                 options.AllowClientCredentialsFlow();
+
+                // Enables the Authorization Code grant type — the correct flow for browser-based apps.
+                // The browser never sees the access token directly; instead it gets a short-lived code
+                // that the server exchanges for a token. Combined with PKCE (enforced per-client in
+                // the seeder via Requirements.Features.ProofKeyForCodeExchange), this is the gold standard
+                // for interactive user-facing flows in 2024+.
+                //
+                // Authorization Code grant — RFC 6749 Section 4.1:
+                // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
+                options.AllowAuthorizationCodeFlow();
+
+                // Enables the Refresh Token grant type.
+                // After an access token expires, the client can exchange its refresh token for a new
+                // access token without sending the user through the login flow again. The refresh token
+                // is longer-lived and must be stored securely by the client.
+                //
+                // Refresh Token grant — RFC 6749 Section 6:
+                // https://datatracker.ietf.org/doc/html/rfc6749#section-6
+                options.AllowRefreshTokenFlow();
 
                 // Development-only signing and encryption certificates.
                 // Great for local work. Garbage for production.
@@ -157,9 +240,11 @@ public static class ServiceCollectionExtensions
                 // With this line: we get full control after protocol validation. Absolute cinema.
                 //
                 // OpenIddict passthrough mode docs:
-                // https://documentation.openiddict.com/guides/getting-started/creating-your-own-server-instance#passthrough-mode
+                // https://documentation.openiddict.com/guides/getting-started/creating-your-own-server-instance
                 options.UseAspNetCore()
-                    .EnableTokenEndpointPassthrough();
+                    .EnableTokenEndpointPassthrough()
+                    .EnableAuthorizationEndpointPassthrough()
+                    .EnableEndSessionEndpointPassthrough();
             });
 
         return services;

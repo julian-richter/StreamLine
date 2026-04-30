@@ -1,17 +1,23 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace StreamLineAuthZ.Data;
 
-// The single DbContext for this application. It owns both our own tables (when we add them)
-// and OpenIddict's tables (Applications, Tokens, Authorizations, Scopes).
-// Keeping them in one context means one database, one migration history, one connection pool.
+// Single DbContext that owns three table groups in one database and one migration history:
+//   1. ASP.NET Core Identity  — AspNetUsers, AspNetRoles, AspNetUserClaims, etc.
+//   2. OpenIddict             — OpenIddictApplications, Tokens, Authorizations, Scopes
+//   3. Future app tables      — anything else we add over time
 //
-// `sealed` means nobody can subclass this. Good. DbContext inheritance hierarchies are a trap.
+// IdentityDbContext<ApplicationUser> sets up the Identity schema.
+// UseOpenIddict() tells EF Core to include OpenIddict's entity model alongside it.
 //
 // EF Core DbContext docs:
 //   https://learn.microsoft.com/en-us/ef/core/dbcontext-configuration/
-public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
-{ 
+// Identity with EF Core:
+//   https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity
+public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    : IdentityDbContext<ApplicationUser>(options)
+{
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
