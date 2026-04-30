@@ -1,0 +1,21 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.2.4">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>ea4b8e5d-29ad-4572-8c53-a8b25dcc6233</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.2.4" />
+      <PackageReference Include="Aspire.Hosting.Redis" Version="13.2.4" />
+      <PackageReference Include="Scalar.Aspire" Version="0.9.31" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\StreamLineAuthZ\StreamLineAuthZ.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="StreamLineAppHost\StreamLineAppHost.csproj" />
+  <Project Path="StreamLineAuthZ.ServiceDefaults/StreamLineAuthZ.ServiceDefaults.csproj" />
+  <Project Path="StreamLineAuthZ/StreamLineAuthZ.csproj" />
+</Solution>
