@@ -1,9 +1,11 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.DataProtection.StackExchangeRedis;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
@@ -170,18 +172,46 @@ public static class ServiceCollectionExtensions
                 }
                 else
                 {
-                    // Production: load real certificates from a certificate store, .pfx file,
-                    // Azure Key Vault, or a secrets manager. The dev certificates above MUST NOT
-                    // be used in production — they are not trusted by any client and change on restart.
+                    // Production keys loaded from configuration.
+                    // Never put these values in source control — store them in Azure Key Vault
+                    // and surface them as Container App secrets or environment variables.
                     //
-                    // Example (X.509 from file):
-                    //   options.AddEncryptionCertificate(certificate);
-                    //   options.AddSigningCertificate(certificate);
+                    // Generate once and store the output securely:
                     //
-                    // See: https://documentation.openiddict.com/configuration/encryption-and-signing-credentials
-                    throw new InvalidOperationException(
-                        "Production signing and encryption certificates are not configured. " +
-                        "See ServiceCollectionExtensions.cs for instructions.");
+                    //   Signing key — RSA 2048-bit private key, PKCS#8 DER, base64-encoded:
+                    //     openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 | \
+                    //       openssl pkcs8 -topk8 -nocrypt -outform DER | base64
+                    //
+                    //   Encryption key — 32 random bytes (AES-256), base64-encoded:
+                    //     openssl rand -base64 32
+                    //
+                    // Set as environment variables (double-underscore = nested config in ASP.NET Core):
+                    //   OpenIddict__SigningKey=<base64 RSA key>
+                    //   OpenIddict__EncryptionKey=<base64 AES key>
+
+                    var signingKeyBase64 = configuration["OpenIddict:SigningKey"]
+                        ?? throw new InvalidOperationException(
+                            "OpenIddict:SigningKey is not configured. " +
+                            "Generate an RSA 2048-bit PKCS#8 key and set it as the " +
+                            "OpenIddict__SigningKey environment variable.");
+
+                    var encryptionKeyBase64 = configuration["OpenIddict:EncryptionKey"]
+                        ?? throw new InvalidOperationException(
+                            "OpenIddict:EncryptionKey is not configured. " +
+                            "Generate a 32-byte random key and set it as the " +
+                            "OpenIddict__EncryptionKey environment variable.");
+
+                    var encryptionKeyBytes = Convert.FromBase64String(encryptionKeyBase64);
+                    if (encryptionKeyBytes.Length != 32)
+                        throw new InvalidOperationException(
+                            $"OpenIddict:EncryptionKey must decode to exactly 32 bytes (AES-256) " +
+                            $"but got {encryptionKeyBytes.Length}. Regenerate with: openssl rand -base64 32");
+
+                    var rsa = RSA.Create();
+                    rsa.ImportPkcs8PrivateKey(Convert.FromBase64String(signingKeyBase64), out _);
+                    options.AddSigningKey(new RsaSecurityKey(rsa));
+
+                    options.AddEncryptionKey(new SymmetricSecurityKey(encryptionKeyBytes));
                 }
 
                 options.UseAspNetCore()
