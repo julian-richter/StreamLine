@@ -1,7 +1,11 @@
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.DataProtection.StackExchangeRedis;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using StackExchange.Redis;
 using StreamLineAuthZ.Data;
 using StreamLineAuthZ.Endpoints;
 
@@ -155,6 +159,30 @@ public static class ServiceCollectionExtensions
         // ASP.NET Core authorization docs:
         // https://learn.microsoft.com/en-us/aspnet/core/security/authorization/introduction
         services.AddAuthorization();
+
+        // Data Protection — persist encryption keys to Redis so they survive process restarts.
+        //
+        // Without this, ASP.NET Core generates a new key ring every time the process starts.
+        // Any Identity cookies or anti-forgery tokens signed with the old keys become invalid,
+        // which means active browser sessions are silently killed on every redeploy.
+        //
+        // SetApplicationName pins the key ring to a fixed name. If the name ever changes,
+        // all previously issued cookies and tokens are immediately invalidated — treat it
+        // like a primary key, not a display name.
+        //
+        // The key repository is configured via AddOptions so that IConnectionMultiplexer
+        // resolves from DI at first use rather than at service-registration time. This keeps
+        // ServiceCollectionExtensions free of direct Redis construction and plays nicely with
+        // Aspire's builder.AddRedisClient("redis") registration in Program.cs.
+        //
+        // ASP.NET Core Data Protection docs:
+        //   https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/introduction
+        services.AddDataProtection()
+            .SetApplicationName("StreamLineAuthZ");
+
+        services.AddOptions<KeyManagementOptions>()
+            .Configure<IConnectionMultiplexer>((opts, redis) =>
+                opts.XmlRepository = new RedisXmlRepository(() => redis.GetDatabase(), "StreamLine-DataProtection-Keys"));
 
         // Razor Pages powers the login page at /Account/Login.
         // We use a Razor Page instead of an inline HTML response to get tag helpers,
