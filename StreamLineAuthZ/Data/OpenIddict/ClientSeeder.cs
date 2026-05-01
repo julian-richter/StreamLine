@@ -65,6 +65,7 @@ public static class ClientSeeder
         {
             ClientId = clientId,
             DisplayName = "StreamLine Client",
+            ClientType = OpenIddictConstants.ClientTypes.Public,
 
             // Explicit requires that a permanent authorization record exist before OpenIddict
             // will issue tokens. We satisfy this programmatically in AuthorizeEndpoint — the
@@ -78,7 +79,9 @@ public static class ClientSeeder
             // RFC 6749 Section 3.1.2: https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2
             RedirectUris =
             {
-                new Uri("http://localhost:5173/callback")
+                new Uri("http://localhost:5173/callback"),
+                // Postman's OAuth2 helper redirect — allows "Get New Access Token" in the collection.
+                new Uri("https://oauth.pstmn.io/v1/callback")
             },
 
             // After logout the user is sent here. Lock these down in production.

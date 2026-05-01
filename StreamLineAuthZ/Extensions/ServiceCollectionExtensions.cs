@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using OpenIddict.Abstractions;
 using StackExchange.Redis;
 using StreamLineAuthZ.Data;
 using StreamLineAuthZ.Endpoints;
@@ -215,6 +216,18 @@ public static class ServiceCollectionExtensions
                 options.SetTokenEndpointUris("/connect/token");
                 options.SetAuthorizationEndpointUris("/connect/authorize");
                 options.SetEndSessionEndpointUris("/connect/logout");
+
+                // Registers the scopes this server accepts. OpenIddict is scope opt-in by default —
+                // any scope not listed here is rejected with invalid_scope before your handler runs.
+                // Standard OIDC scopes (profile, email, offline_access) must be explicitly registered
+                // even though they are "built-in"; only openid is accepted without this call.
+                // The "api" scope is backed by a record in the OpenIddict scopes store (see ScopeSeeder).
+                options.RegisterScopes(
+                    OpenIddictConstants.Scopes.OpenId,
+                    OpenIddictConstants.Scopes.Profile,
+                    OpenIddictConstants.Scopes.Email,
+                    OpenIddictConstants.Scopes.OfflineAccess,
+                    "api");
 
                 // Enables the Client Credentials grant type.
                 // OpenIddict is grant-type opt-in by default. If you don't explicitly allow a flow,

@@ -30,6 +30,20 @@ public class LoginModel(SignInManager<ApplicationUser> signInManager) : PageMode
 
     public void OnGet() { }
 
+    // LocalRedirect() rejects absolute URLs, but OpenIddict sets the ReturnUrl to the full
+    // /connect/authorize URL (same host). We allow absolute redirects back to our own host only.
+    private string SafeReturnUrl()
+    {
+        if (string.IsNullOrEmpty(ReturnUrl))
+            return "/";
+        if (Url.IsLocalUrl(ReturnUrl))
+            return ReturnUrl;
+        if (Uri.TryCreate(ReturnUrl, UriKind.Absolute, out var uri) &&
+            uri.Host.Equals(HttpContext.Request.Host.Host, StringComparison.OrdinalIgnoreCase))
+            return ReturnUrl;
+        return "/";
+    }
+
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)
@@ -42,7 +56,7 @@ public class LoginModel(SignInManager<ApplicationUser> signInManager) : PageMode
             lockoutOnFailure  : true);
 
         if (result.Succeeded)
-            return LocalRedirect(ReturnUrl ?? "/");
+            return Redirect(SafeReturnUrl());
 
         if (result.IsLockedOut)
         {
