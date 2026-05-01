@@ -10,13 +10,7 @@ public static class ScopeSeeder
     {
         const string scopeName = "api";
 
-        // Idempotent guard — safe to call on every startup without duplicating data.
-        if (await scopeManager.FindByNameAsync(scopeName, cancellationToken) is not null)
-        {
-            return;
-        }
-
-        await scopeManager.CreateAsync(new OpenIddictScopeDescriptor
+        var descriptor = new OpenIddictScopeDescriptor
         {
             Name = scopeName,         // what clients request:  scope=api
             DisplayName = "StreamLine API",
@@ -28,6 +22,12 @@ public static class ScopeSeeder
                 // JWT `aud` claim — RFC 7519 Section 4.1.3: https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3
                 "streamline-api"
             }
-        }, cancellationToken);
+        };
+
+        var existing = await scopeManager.FindByNameAsync(scopeName, cancellationToken);
+        if (existing is null)
+            await scopeManager.CreateAsync(descriptor, cancellationToken);
+        else
+            await scopeManager.UpdateAsync(existing, descriptor, cancellationToken);
     }
 }

@@ -56,7 +56,7 @@ public sealed class TokenEndpoint : IEndpoint
                 **Scopes**
 
                 Request scopes via the `scope` field (space-separated). The granted scopes may be a subset of
-                what was requested. Available scopes: `api`, `openid`, `profile`.
+                what was requested. Available scopes: `openid`, `profile`, `email`, `offline_access`, `api`.
                 """)
             .Accepts<TokenRequestDto>("application/x-www-form-urlencoded")
             .Produces<TokenResponseDto>()

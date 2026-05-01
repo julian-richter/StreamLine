@@ -24,10 +24,7 @@ public static class ClientSeeder
     {
         const string clientId = "streamline-m2m";
 
-        if (await applicationManager.FindByClientIdAsync(clientId, cancellationToken) is not null)
-            return;
-
-        await applicationManager.CreateAsync(new OpenIddictApplicationDescriptor
+        var descriptor = new OpenIddictApplicationDescriptor
         {
             ClientId = clientId,
             // TODO: replace with a value from our secrets manager before shipping to production.
@@ -41,7 +38,13 @@ public static class ClientSeeder
                 OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
                 OpenIddictConstants.Permissions.Prefixes.Scope + "api"
             }
-        }, cancellationToken);
+        };
+
+        var existing = await applicationManager.FindByClientIdAsync(clientId, cancellationToken);
+        if (existing is null)
+            await applicationManager.CreateAsync(descriptor, cancellationToken);
+        else
+            await applicationManager.UpdateAsync(existing, descriptor, cancellationToken);
     }
 
     // Browser-based SvelteKit frontend using Authorization Code + PKCE.
@@ -51,28 +54,22 @@ public static class ClientSeeder
     {
         const string clientId = "streamline-client";
 
-        // Idempotent guard: safe to call on every startup without duplicating data.
-        if (await applicationManager.FindByClientIdAsync(clientId, cancellationToken) is not null)
-        {
-            return;
-        }
-
         // This registers a PUBLIC client using the Authorization Code + PKCE flow.
-        // That's the correct flow for a browser-based SvelteKit app, it runs on the user's
+        // That's the correct flow for a browser-based SvelteKit app — it runs on the user's
         // machine and cannot safely store a client_secret, so we use PKCE instead.
-        //
-        // NOTE: AllowAuthorizationCodeFlow() must be enabled in ServiceCollectionExtensions.cs
         //
         // Public vs confidential clients — RFC 6749 Section 2.1: https://datatracker.ietf.org/doc/html/rfc6749#section-2.1
         // Authorization Code flow — RFC 6749 Section 4.1: https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
         // PKCE — RFC 7636: https://datatracker.ietf.org/doc/html/rfc7636
-        await applicationManager.CreateAsync(new OpenIddictApplicationDescriptor
+        var descriptor = new OpenIddictApplicationDescriptor
         {
             ClientId = clientId,
-            DisplayName = "StreamLine SvelteKit Client",
+            DisplayName = "StreamLine Client",
 
-            // Explicit consent means the user sees a "grant access" screen before the token
-            // is issued. For a first-party app you'd use ConsentTypes.Implicit to skip the screen.
+            // Explicit requires that a permanent authorization record exist before OpenIddict
+            // will issue tokens. We satisfy this programmatically in AuthorizeEndpoint — the
+            // first login auto-creates the record without showing a consent UI, because this is
+            // a first-party app. ConsentTypes.Implicit would skip the authorization record entirely.
             // OpenID Connect consent: https://openid.net/specs/openid-connect-core-1_0.html#Consent
             ConsentType = OpenIddictConstants.ConsentTypes.Explicit,
 
@@ -99,11 +96,17 @@ public static class ClientSeeder
                 OpenIddictConstants.Permissions.Endpoints.EndSession,     // can hit /connect/logout
 
                 OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode, // can use auth code flow
+                OpenIddictConstants.Permissions.GrantTypes.RefreshToken,      // can exchange refresh tokens
                 OpenIddictConstants.Permissions.ResponseTypes.Code,           // can request response_type=code
 
-                // Scopes this client is allowed to request. The "api" scope was seeded by ScopeSeeder.
+                // Scopes this client is allowed to request.
+                // offline_access is the OIDC scope that signals the server to issue a refresh token alongside
+                // the access token. Defined in OpenID Connect Core §11:
+                // https://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
                 OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.OpenId,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Profile,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.Email,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OpenIddictConstants.Scopes.OfflineAccess,
                 OpenIddictConstants.Permissions.Prefixes.Scope + "api"
             },
 
@@ -114,6 +117,12 @@ public static class ClientSeeder
             {
                 OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
             }
-        }, cancellationToken);
+        };
+
+        var existing = await applicationManager.FindByClientIdAsync(clientId, cancellationToken);
+        if (existing is null)
+            await applicationManager.CreateAsync(descriptor, cancellationToken);
+        else
+            await applicationManager.UpdateAsync(existing, descriptor, cancellationToken);
     }
 }
