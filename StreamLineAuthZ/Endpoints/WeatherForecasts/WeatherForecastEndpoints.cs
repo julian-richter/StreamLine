@@ -16,7 +16,8 @@ public sealed class WeatherForecastEndpoints : IEndpoint
             .WithName("GetWeatherForecasts")
             .WithSummary("Get a 5-day weather forecast.")
             .WithDescription("Returns five sample weather forecast entries. Development scaffolding — not part of the auth server contract.")
-            .Produces<WeatherForecastDto[]>(StatusCodes.Status200OK);
+            .Produces<WeatherForecastDto[]>(StatusCodes.Status200OK)
+            .RequireAuthorization("api");
     }
 
     private static WeatherForecastDto[] GetWeatherForecasts() =>

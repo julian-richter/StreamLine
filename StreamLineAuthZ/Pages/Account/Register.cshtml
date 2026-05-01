@@ -1,8 +1,8 @@
 @page
-@model StreamLineAuthZ.Pages.Account.LoginModel
+@model StreamLineAuthZ.Pages.Account.RegisterModel
 @{
     Layout = null;
-    ViewData["Title"] = "Sign in";
+    ViewData["Title"] = "Create account";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -127,26 +127,30 @@
 </head>
 <body>
     <div class="card">
-        <h1>Welcome back</h1>
-        <p class="subtitle">Sign in to your StreamLine account</p>
+        <h1>Create account</h1>
+        <p class="subtitle">Sign up for StreamLine</p>
 
         <form method="post">
             <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
             <input type="hidden" asp-for="ReturnUrl" />
 
             <label asp-for="Input.Email">Email</label>
-            <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="you@example.com" />
+            <input asp-for="Input.Email" type="email" autocomplete="email" placeholder="you@example.com" />
             <span asp-validation-for="Input.Email" class="field-validation-error"></span>
 
             <label asp-for="Input.Password">Password</label>
-            <input asp-for="Input.Password" type="password" autocomplete="current-password" placeholder="••••••••" />
+            <input asp-for="Input.Password" type="password" autocomplete="new-password" placeholder="••••••••" />
             <span asp-validation-for="Input.Password" class="field-validation-error"></span>
 
-            <button type="submit">Sign in</button>
+            <label asp-for="Input.ConfirmPassword">Confirm password</label>
+            <input asp-for="Input.ConfirmPassword" type="password" autocomplete="new-password" placeholder="••••••••" />
+            <span asp-validation-for="Input.ConfirmPassword" class="field-validation-error"></span>
+
+            <button type="submit">Create account</button>
         </form>
 
         <span class="footer-link">
-            No account? <a asp-page="Register" asp-route-ReturnUrl="@Model.ReturnUrl">Create one</a>
+            Already have an account? <a asp-page="Login" asp-route-ReturnUrl="@Model.ReturnUrl">Sign in</a>
         </span>
     </div>
 </body>

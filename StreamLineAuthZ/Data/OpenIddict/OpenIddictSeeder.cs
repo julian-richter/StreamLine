@@ -26,6 +26,11 @@ public static class OpenIddictSeeder
         // so it must already exist when CreateAsync runs.
         await ScopeSeeder.SeedAsync(scopeManager, cancellationToken);
         await ClientSeeder.SeedAsync(applicationManager, cancellationToken);
-        await UserSeeder.SeedAsync(userManager, cancellationToken);
+
+        // Dev-only: seed a test user so the Authorization Code flow can be tested
+        // immediately without a registration step. Never run in production.
+        var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+        if (env.IsDevelopment())
+            await UserSeeder.SeedAsync(userManager, cancellationToken);
     }
 }
