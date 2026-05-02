@@ -1,0 +1,73 @@
+@page
+@{
+    Layout = null;
+    ViewData["Title"] = "Check your email";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] – StreamLine</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #111827;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+
+        h1 {
+            margin: 0 0 .5rem;
+            font-size: 1.375rem;
+            font-weight: 700;
+        }
+
+        p {
+            margin: 0 0 1.5rem;
+            font-size: .875rem;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .footer-link {
+            font-size: .875rem;
+            color: #6b7280;
+        }
+
+        .footer-link a {
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">✉</div>
+        <h1>Check your email</h1>
+        <p>We've sent a confirmation link to your email address. Click the link to activate your account.</p>
+        <p class="footer-link">Already confirmed? <a asp-page="/Account/Login">Sign in</a></p>
+    </div>
+</body>
+</html>

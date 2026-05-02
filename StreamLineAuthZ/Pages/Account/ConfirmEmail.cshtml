@@ -1,0 +1,90 @@
+@page
+@model StreamLineAuthZ.Pages.Account.ConfirmEmailModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Confirm email";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] – StreamLine</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #111827;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+
+        h1 {
+            margin: 0 0 .5rem;
+            font-size: 1.375rem;
+            font-weight: 700;
+        }
+
+        p {
+            margin: 0 0 1.5rem;
+            font-size: .875rem;
+            color: #6b7280;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: .625rem 1.5rem;
+            background: #6366f1;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background .15s;
+        }
+
+        .btn:hover { background: #4f46e5; }
+
+        .btn-error {
+            background: #ef4444;
+        }
+
+        .btn-error:hover { background: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        @if (Model.Succeeded)
+        {
+            <div class="icon">✓</div>
+            <h1>Email confirmed</h1>
+            <p>Your account is now active. You can sign in.</p>
+            <a asp-page="/Account/Login" class="btn">Sign in</a>
+        }
+        else
+        {
+            <div class="icon">✗</div>
+            <h1>Confirmation failed</h1>
+            <p>The link is invalid or has already been used. Please register again or contact support.</p>
+            <a asp-page="/Account/Register" class="btn btn-error">Back to registration</a>
+        }
+    </div>
+</body>
+</html>

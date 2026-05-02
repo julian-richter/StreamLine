@@ -12,6 +12,7 @@ using OpenIddict.Validation.AspNetCore;
 using StackExchange.Redis;
 using StreamLineAuthZ.Data;
 using StreamLineAuthZ.Endpoints;
+using StreamLineAuthZ.Infrastructure.Email;
 
 namespace StreamLineAuthZ.Extensions;
 
@@ -112,9 +113,13 @@ public static class ServiceCollectionExtensions
                 }
 
                 options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = !environment.IsDevelopment();
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+
+        services.Configure<SmtpSettings>(configuration.GetSection("Email"));
+        services.AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>();
 
         services.AddAuthentication();
 
