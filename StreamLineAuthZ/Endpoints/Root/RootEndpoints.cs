@@ -6,7 +6,10 @@ public class RootEndpoints : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("/", () => Results.Redirect("/scalar/v1"))
+        var env = app.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+        var target = env.IsDevelopment() ? "/scalar/v1" : "/Account/Login";
+
+        app.MapGet("/", () => Results.Redirect(target))
             .ExcludeFromDescription()
             .ExcludeFromApiReference();
     }

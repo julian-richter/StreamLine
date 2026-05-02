@@ -17,8 +17,9 @@ namespace StreamLineAuthZ.Endpoints.Auth;
 //   2. OpenIddict validates the request parameters (client_id, redirect_uri, PKCE, etc.)
 //   3. This handler runs. If the user has no Identity cookie -> redirect to login page.
 //   4. After login the browser comes back here with a valid cookie.
-//   5. We locate or create a permanent authorization (consent record) for this user + client.
-//   6. Results.SignIn tells OpenIddict to issue the authorization code and redirect to redirect_uri.
+//   5. If no permanent authorization record exists, redirect to /Account/Consent.
+//   6. On approval, the consent page creates the record and redirects back here.
+//   7. Results.SignIn tells OpenIddict to issue the authorization code and redirect to redirect_uri.
 //
 // Authorization Code grant — RFC 6749 §4.1: https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
 // PKCE — RFC 7636: https://datatracker.ietf.org/doc/html/rfc7636
@@ -82,29 +83,26 @@ public sealed class AuthorizeEndpoint : IEndpoint
             type    : OpenIddictConstants.AuthorizationTypes.Permanent,
             scopes  : scopes).FirstOrDefaultAsync();
 
-        var principal = BuildPrincipal(user, userId, scopes);
+        // No prior consent — send the user to the consent screen. The page creates the
+        // permanent authorization record on approval and redirects back here to complete the flow.
+        if (authorization is null)
+        {
+            var returnUrl = Uri.EscapeDataString(httpCtx.Request.GetEncodedUrl());
+            return Results.Redirect($"/Account/Consent?returnUrl={returnUrl}");
+        }
 
-        // No prior consent record — create one automatically. Because streamline-client is a
-        // first-party app (our own SvelteKit frontend) we skip the consent screen entirely and
-        // approve on behalf of the user. This is the "programmatic consent" pattern.
-        // To show a real consent UI, return a consent page view here instead.
-        authorization ??= await authorizationManager.CreateAsync(
-            principal : principal,
-            subject   : userId,
-            client    : applicationId,
-            type      : OpenIddictConstants.AuthorizationTypes.Permanent,
-            scopes    : scopes);
+        var principal = BuildPrincipal(user, userId, scopes);
 
         // Attach the authorization ID so OpenIddict can link the issued tokens back to this
         // consent record and revoke them all together if needed.
-        principal.SetAuthorizationId(await authorizationManager.GetIdAsync(authorization!));
+        principal.SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
 
         // SignIn tells OpenIddict to serialize the principal into an authorization code,
         // store it, and redirect the browser back to the client's redirect_uri with ?code=...
         return Results.SignIn(principal, authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
-    private static ClaimsPrincipal BuildPrincipal(ApplicationUser user, string userId, ImmutableArray<string> scopes)
+    internal static ClaimsPrincipal BuildPrincipal(ApplicationUser user, string userId, ImmutableArray<string> scopes)
     {
         var identity = new ClaimsIdentity(
             authenticationType : OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,

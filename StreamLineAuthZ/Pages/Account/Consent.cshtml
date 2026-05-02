@@ -1,0 +1,127 @@
+@page
+@model StreamLineAuthZ.Pages.Account.ConsentModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Authorize";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] – StreamLine</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #111827;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        h1 {
+            margin: 0 0 .25rem;
+            font-size: 1.375rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            margin: 0 0 1.75rem;
+            font-size: .875rem;
+            color: #6b7280;
+        }
+
+        .scope-list {
+            list-style: none;
+            margin: 0 0 2rem;
+            padding: 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .scope-list li {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            padding: .625rem .875rem;
+            font-size: .875rem;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .scope-list li:last-child { border-bottom: none; }
+
+        .scope-list li::before {
+            content: "✓";
+            color: #6366f1;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: .75rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: .625rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        .btn-allow {
+            background: #6366f1;
+            color: #fff;
+        }
+
+        .btn-allow:hover { background: #4f46e5; }
+
+        .btn-deny {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-deny:hover { background: #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Authorize @Model.ClientName</h1>
+        <p class="subtitle">This application is requesting permission to:</p>
+
+        <ul class="scope-list">
+            @foreach (var scope in Model.RequestedScopes)
+            {
+                <li>@ConsentModel.GetScopeDisplayName(scope)</li>
+            }
+        </ul>
+
+        <form method="post" class="actions">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <button type="submit" asp-page-handler="Deny" class="btn btn-deny">Deny</button>
+            <button type="submit" asp-page-handler="Allow" class="btn btn-allow">Allow access</button>
+        </form>
+    </div>
+</body>
+</html>
