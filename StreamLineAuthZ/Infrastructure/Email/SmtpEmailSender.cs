@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +19,7 @@ public sealed class SmtpEmailSender(
         => SendAsync(email, "Confirm your StreamLine account",
             $"""
              <p>Thanks for signing up. Please confirm your email address to activate your account.</p>
-             <p><a href="{confirmationLink}">Confirm my account</a></p>
+             <p><a href="{HtmlEncoder.Default.Encode(confirmationLink)}">Confirm my account</a></p>
              <p>If you did not create this account you can safely ignore this email.</p>
              """);
 
@@ -26,13 +27,13 @@ public sealed class SmtpEmailSender(
         => SendAsync(email, "Reset your StreamLine password",
             $"""
              <p>Click the link below to reset your password. This link expires in one hour.</p>
-             <p><a href="{resetLink}">Reset my password</a></p>
+             <p><a href="{HtmlEncoder.Default.Encode(resetLink)}">Reset my password</a></p>
              <p>If you did not request this, ignore this email.</p>
              """);
 
     public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
         => SendAsync(email, "Reset your StreamLine password",
-            $"<p>Your password reset code is: <strong>{resetCode}</strong></p>");
+            $"<p>Your password reset code is: <strong>{HtmlEncoder.Default.Encode(resetCode)}</strong></p>");
 
     private async Task SendAsync(string to, string subject, string html)
     {

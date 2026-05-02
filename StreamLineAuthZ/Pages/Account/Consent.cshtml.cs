@@ -64,15 +64,27 @@ public class ConsentModel(
         return Redirect(safeUrl);
     }
 
-    public IActionResult OnPostDeny()
+    public async Task<IActionResult> OnPostDenyAsync()
     {
         var safeUrl = SafeReturnUrl();
         var query = ParseQueryString(safeUrl);
 
+        var clientId = query.TryGetValue("client_id", out var cid) ? cid.ToString() : null;
         var redirectUri = query.TryGetValue("redirect_uri", out var ru) ? ru.ToString() : null;
         var state = query.TryGetValue("state", out var st) ? st.ToString() : null;
 
-        if (string.IsNullOrEmpty(redirectUri))
+        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
+            return Redirect("/");
+
+        // Validate redirect_uri against the registered URIs for this client before
+        // trusting it. Without this check, a crafted consent URL could redirect the
+        // user to an arbitrary destination with the access_denied error attached.
+        var application = await applicationManager.FindByClientIdAsync(clientId);
+        if (application is null)
+            return Redirect("/");
+
+        var registeredUris = await applicationManager.GetRedirectUrisAsync(application);
+        if (!registeredUris.Contains(redirectUri, StringComparer.Ordinal))
             return Redirect("/");
 
         var errorParams = new Dictionary<string, string?> { ["error"] = "access_denied" };
