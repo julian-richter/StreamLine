@@ -79,6 +79,13 @@ public static class ServiceCollectionExtensions
             options.ForwardedHeaders =
                 ForwardedHeaders.XForwardedFor |
                 ForwardedHeaders.XForwardedProto;
+
+            // Azure Container Apps and App Service sit behind load balancers whose IPs are not
+            // known at configuration time. Clearing these lists tells ASP.NET Core to trust
+            // forwarded headers from any upstream proxy, which is safe because the platform
+            // controls what reaches the container — external callers cannot spoof these headers.
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
         });
 
         services.AddDbContext<ApplicationDbContext>(options =>
