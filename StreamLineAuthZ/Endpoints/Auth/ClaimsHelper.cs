@@ -27,7 +27,8 @@ internal static class ClaimsHelper
             OpenIddictConstants.Claims.Subject
                 => [OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken],
 
-            // Everything else is access-token only (internal use by resource servers).
-            _ => [OpenIddictConstants.Destinations.AccessToken]
+            // Unknown claims are excluded from all tokens. Only claims explicitly mapped above
+            // are emitted — this prevents Identity internals (SecurityStamp, etc.) leaking out.
+            _ => []
         };
 }

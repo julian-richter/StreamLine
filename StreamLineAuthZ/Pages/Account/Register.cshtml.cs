@@ -1,20 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using StreamLineAuthZ.Data;
 
 namespace StreamLineAuthZ.Pages.Account;
 
 public class RegisterModel(
     UserManager<ApplicationUser> userManager,
-    SignInManager<ApplicationUser> signInManager) : PageModel
+    SignInManager<ApplicationUser> signInManager) : BasePageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
-
-    [BindProperty(SupportsGet = true)]
-    public string? ReturnUrl { get; set; }
 
     public class InputModel
     {
@@ -60,17 +56,5 @@ public class RegisterModel(
 
         await signInManager.SignInAsync(user, isPersistent: false);
         return Redirect(SafeReturnUrl());
-    }
-
-    private string SafeReturnUrl()
-    {
-        if (string.IsNullOrEmpty(ReturnUrl))
-            return "/";
-        if (Url.IsLocalUrl(ReturnUrl))
-            return ReturnUrl;
-        if (Uri.TryCreate(ReturnUrl, UriKind.Absolute, out var uri) &&
-            uri.Host.Equals(HttpContext.Request.Host.Host, StringComparison.OrdinalIgnoreCase))
-            return ReturnUrl;
-        return "/";
     }
 }

@@ -6,10 +6,12 @@ public static class ClientSeeder
 {
     public static async Task SeedAsync(
         IOpenIddictApplicationManager applicationManager,
+        IConfiguration configuration,
+        IWebHostEnvironment environment,
         CancellationToken cancellationToken = default)
     {
         await SeedWebClientAsync(applicationManager, cancellationToken);
-        await SeedMachineClientAsync(applicationManager, cancellationToken);
+        await SeedMachineClientAsync(applicationManager, configuration, environment, cancellationToken);
     }
 
     // Machine-to-machine (M2M) confidential client using the Client Credentials flow.
@@ -20,16 +22,31 @@ public static class ClientSeeder
     // Confidential clients — RFC 6749 Section 2.1: https://datatracker.ietf.org/doc/html/rfc6749#section-2.1
     private static async Task SeedMachineClientAsync(
         IOpenIddictApplicationManager applicationManager,
+        IConfiguration configuration,
+        IWebHostEnvironment environment,
         CancellationToken cancellationToken)
     {
         const string clientId = "streamline-m2m";
 
+        // Read from config; fall back to a dev-only placeholder in development.
+        // In production the app will refuse to start if this is not set.
+        // Generate and store via:  openssl rand -base64 32
+        // Set as:  OpenIddict__M2MClientSecret=<value>
+        var clientSecret = configuration["OpenIddict:M2MClientSecret"];
+        if (clientSecret is null)
+        {
+            if (!environment.IsDevelopment())
+                throw new InvalidOperationException(
+                    "OpenIddict:M2MClientSecret is not configured. " +
+                    "Set it as the OpenIddict__M2MClientSecret environment variable.");
+
+            clientSecret = "m2m-dev-secret";
+        }
+
         var descriptor = new OpenIddictApplicationDescriptor
         {
             ClientId = clientId,
-            // TODO: replace with a value from our secrets manager before shipping to production.
-            // In dev, Aspire can inject this via environment variables or user secrets.
-            ClientSecret = "m2m-dev-secret",
+            ClientSecret = clientSecret,
             DisplayName = "StreamLine M2M Service Client",
             ClientType = OpenIddictConstants.ClientTypes.Confidential,
             Permissions =

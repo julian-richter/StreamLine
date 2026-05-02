@@ -9,20 +9,12 @@ namespace StreamLineAuthZ.Data;
 //   3. Future app tables      — anything else we add over time
 //
 // IdentityDbContext<ApplicationUser> sets up the Identity schema.
-// UseOpenIddict() tells EF Core to include OpenIddict's entity model alongside it.
+// UseOpenIddict() is called in AddDbContext (ServiceCollectionExtensions) to include
+// OpenIddict's entity model alongside it.
 //
 // EF Core DbContext docs:
 //   https://learn.microsoft.com/en-us/ef/core/dbcontext-configuration/
 // Identity with EF Core:
 //   https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-    : IdentityDbContext<ApplicationUser>(options)
-{
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        base.OnConfiguring(optionsBuilder);
-        // OpenIddict EF Core integration:
-        //   https://documentation.openiddict.com/integrations/entity-framework-core
-        optionsBuilder.UseOpenIddict();
-    }
-}
+    : IdentityDbContext<ApplicationUser>(options);

@@ -17,6 +17,8 @@ public static class OpenIddictSeeder
         var applicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
         var scopeManager       = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
         var userManager        = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var configuration      = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var env                = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
         // Apply pending EF Core migrations before seeding — all tables must exist first.
         // Safe to call on every startup; it's a no-op if the schema is already up to date.
@@ -25,11 +27,10 @@ public static class OpenIddictSeeder
         // Scopes before clients — ClientSeeder references the "api" scope by name,
         // so it must already exist when CreateAsync runs.
         await ScopeSeeder.SeedAsync(scopeManager, cancellationToken);
-        await ClientSeeder.SeedAsync(applicationManager, cancellationToken);
+        await ClientSeeder.SeedAsync(applicationManager, configuration, env, cancellationToken);
 
         // Dev-only: seed a test user so the Authorization Code flow can be tested
         // immediately without a registration step. Never run in production.
-        var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
         if (env.IsDevelopment())
             await UserSeeder.SeedAsync(userManager, cancellationToken);
     }

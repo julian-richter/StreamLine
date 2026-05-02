@@ -80,20 +80,20 @@ public sealed class AuthorizeEndpoint : IEndpoint
             client  : applicationId,
             status  : OpenIddictConstants.Statuses.Valid,
             type    : OpenIddictConstants.AuthorizationTypes.Permanent,
-            scopes  : scopes).LastOrDefaultAsync();
+            scopes  : scopes).FirstOrDefaultAsync();
+
+        var principal = BuildPrincipal(user, userId, scopes);
 
         // No prior consent record — create one automatically. Because streamline-client is a
         // first-party app (our own SvelteKit frontend) we skip the consent screen entirely and
         // approve on behalf of the user. This is the "programmatic consent" pattern.
         // To show a real consent UI, return a consent page view here instead.
         authorization ??= await authorizationManager.CreateAsync(
-            principal : BuildPrincipal(user, userId, scopes),
+            principal : principal,
             subject   : userId,
             client    : applicationId,
             type      : OpenIddictConstants.AuthorizationTypes.Permanent,
             scopes    : scopes);
-
-        var principal = BuildPrincipal(user, userId, scopes);
 
         // Attach the authorization ID so OpenIddict can link the issued tokens back to this
         // consent record and revoke them all together if needed.

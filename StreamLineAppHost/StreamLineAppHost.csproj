@@ -9,7 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.2.4" />
       <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.2.4" />
       <PackageReference Include="Aspire.Hosting.Redis" Version="13.2.4" />
       <PackageReference Include="Scalar.Aspire" Version="0.9.31" />
@@ -17,7 +16,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\StreamLineAuthZ\StreamLineAuthZ.csproj" />
-      <ProjectReference Include="..\GrpcManagementService\GrpcManagementService.csproj" />
     </ItemGroup>
 
 </Project>
